@@ -1,0 +1,6 @@
+s3fs
+boto3
+pandas
+pyarrow
+fastparquet
+apache-airflow-providers-slack
