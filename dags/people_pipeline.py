@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.operators.python_operator import PythonOperator
+from airflow.operators.empty import EmptyOperator
 from airflow.operators.http_operator import SimpleHttpOperator
 from airflow.models import Variable
 from io import BytesIO, StringIO
@@ -170,7 +171,8 @@ dag = DAG(
 # Definir operadores
 
 start = EmptyOperator(
-    task_id='Start'
+    task_id='Start',
+    dag=dag,    
 )
 
 read_bronze_task = PythonOperator(
@@ -193,7 +195,8 @@ write_gold_task = PythonOperator(
 )
 
 end = EmptyOperator(
-    task_id='End'
+    task_id='End',
+    dag=dag,
 )
 
 # Definir dependência entre tarefas
