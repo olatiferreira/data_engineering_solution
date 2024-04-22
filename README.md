@@ -28,7 +28,7 @@ Tornar o processo de atualização dos dados através das camadas (bronze, silve
 
 - Para reduzir custos e otimizar o armazenamento, serão implementadas políticas de ciclo de vida dos dados, as quais irão permitir automatizar a transição dos dados entre diferentes classes de armazenamento do S3 com base nos padrões de acesso;
 
-    -  Por exemplo, os dados que não forem acessados após um determinado período de tempo serão  movidos para a classe de armazenamento S3 Infrequent Access (S3 IA) ou até mesmo para a S3 Glacier Flexible Retrieval.
+    -  Por exemplo, os dados que não forem acessados após um determinado período de tempo serão movidos para a classe de armazenamento S3 Infrequent Access (S3 IA) ou até mesmo para a S3 Glacier Flexible Retrieval.
 
 #### 2. Processamento
 
@@ -36,9 +36,9 @@ Tornar o processo de atualização dos dados através das camadas (bronze, silve
 
     - Por exemplo, poderá ser provisionado clusters temporários para execução de tarefas apenas quando necessário, evitando gastos excessivos com infraestrutura ociosa;
 
-- Cada notebook será executado em um cluster Databricks dedicado, conforme as boas práticas recomendam, aproveitando a escalabilidade e o poder de processamento da plataforma de forma eficiente, garantindo que apenas os recursos necessários sejam utiliados;
+- Cada notebook será executado em um cluster Databricks dedicado, conforme as boas práticas recomendam, aproveitando a escalabilidade e o poder de processamento da plataforma de forma eficiente, garantindo que apenas os recursos necessários sejam utilizados;
 
-    - Por exemplo, poderá ser configurado políticas de auto-escalonamento para ajustar dinamicamente o tamanho dos clusters com base na carga de trabalho, evitando desperdício de recursos e consequentemente reduzindo os custos.
+    - Por exemplo, poderá ser configurado políticas de auto escalonamento para ajustar dinamicamente o tamanho dos clusters com base na carga de trabalho, evitando desperdício de recursos e consequentemente reduzindo os custos.
 
 #### 3. Análise
 
@@ -96,7 +96,107 @@ Tornar o processo de atualização dos dados através das camadas (bronze, silve
 
 - **Automação e orquestração:** O Airflow garante que o pipeline de dados seja executado de forma confiável e consistente, garantindo os SLAs necessários para o negócio.
 
-- **Controle de versão e qualidade do código:** Além do GitLab realizar o  controle de versão e documentação dos scripts, garantindo a colaboração entre equipes de desenvolvimento, também implementa pipelines CI/CD automatizados, que juntamente com testes automatizados e de revisão de código, assegura a qualidade do código e a integridade dos pipelines.
+- **Controle de versão e qualidade do código:** Além do GitLab realizar o controle de versão e documentação dos scripts, garantindo a colaboração entre equipes de desenvolvimento, também implementa pipelines CI/CD automatizados, que juntamente com testes automatizados e de revisão de código, assegura a qualidade do código e a integridade dos pipelines.
+
+## [Entregável 2] - Implementação prática de um componente demonstrando o funcionamento
+
+O componente da solução implementado para demonstrar o funcionamento foi a criação e execução de uma tarefa, utilizando o Amazon Managed Workflows for Apache **Airflow**, tornando o processo de atualização dos dados através das camadas mais resilientes e estável.
+
+> **Nota**
+> Esta implementação trata-se de um MVP (produto viável mínimo) com o objetivo de demonstrar o funcionamento de um componente específico da solução citada anteriormente.
+
+### Estrutura do Bucket no S3 📁
+
+```sql
+├── data-engineering-solution-mvp
+│   ├── airflow
+│   │   ├── dags
+│   │   │   ├── people_pipeline.py
+│   │   ├── scripts
+│   │   │   ├── requirements.txt
+│   ├── data
+│   │   ├── bronze
+│   │   │   ├── people-100000.csv
+│   │   │   ├── people-100000_v2.csv
+│   │   ├── silver
+│   │   │   ├── people_all.parquet
+│   │   ├── gold
+│   │   │   ├── people_without_duplicates.parquet
+```
+
+#### Dados
+
+- Os dados da camada bronze são fictícios, oriundos do repositório do [Github](https://github.com/datablist/sample-csv-files?tab=readme-ov-file);
+
+    - O download pode ser realizado [aqui](https://drive.google.com/uc?id=1VEi-dnEh4RbBKa97fyl_Eenkvu2NC6ki&export=download);
+
+    - Os dados dos arquivos "people-100000.csv" e "people-100000_v2.csv" foram duplicados propositalmente para demonstrar a validação realizada na etapa "write_gold_data" da tarefa "people_pipeline", mencionada abaixo.
+
+### Tarefa (DAG) 🚥
+
+![DAG](./readme-img/1_dag.jpg)
+
+### Fluxo 🔀
+
+![Fluxo](./readme-img/2_fluxo.jpg)
+
+#### 1. Etapa "read_bronze_data"
+
+![read_bronze_data](./readme-img/3_read_bronze_data.jpg)
+
+- Esta etapa é responsável por capturar os dados brutos na forma original de todos os arquivos armazenados na camada bronze;
+
+    ![s3_read_bronze_data](./readme-img/3_1_s3_read_bronze_data.jpg)
+
+    - A origem dos dados (bucket S3) é configurada como uma variável no Airflow, portanto não é necessário alterar o script python do pipeline, facilitando a utilização por profissionais com baixo conhecimento técnico e possibilitando a reutilização do código em outros pipelines de dados;
+
+        ![var_read_bronze_data](./readme-img/3_3_var_read_bronze_data.jpg)
+
+- A leitura dos arquivos é realizada de forma dinâmica, independentemente da quantidade de arquivos existente e da nomenclatura deles;
+
+- Ao final desta etapa uma notificação é enviada ao Slack sinalizando êxito (quantidade de arquivos processados) ou falha, com os respectivos detalhes.
+
+    ![slack_read_bronze_data](./readme-img/3_2_slack_read_bronze_data.jpg)
+
+#### 2. Etapa "write_silver_data"
+
+![write_silver_data](./readme-img/4_write_silver_data.jpg)
+
+- Esta etapa é responsável por capturar os dados processados na etapa anterior, consolidar e salvar em formato parquet na camada silver;
+
+    ![s3_write_silver_data](./readme-img/4_1_s3_write_silver_data.jpg)
+
+    - O nome do arquivo gerado é configurado como uma variável no Airflow, portanto não é necessário alterar o script python do pipeline, facilitando a utilização por profissionais com baixo conhecimento técnico e possibilitando a reutilização do código em outros pipelines de dados;
+
+        ![var_write_silver_data](./readme-img/4_3_var_write_silver_data.jpg)
+
+- Ao final desta etapa uma notificação é enviada ao Slack sinalizando êxito (nome do arquivo gerado) ou falha, com os respectivos detalhes.
+
+    ![slack_write_silver_data](./readme-img/4_2_slack_write_silver_data.jpg)
+
+#### 3. Etapa "write_gold_data"
+
+![write_gold_data](./readme-img/5_write_gold_data.jpg)
+
+- Esta etapa é responsável por capturar os dados processados na etapa anterior, retirar as duplicidades de registros e salva-los em formato parquet na camada gold para ser consumido pelas áreas de negócio;
+    
+    ![s3_write_gold_data](./readme-img/5_1_s3_write_gold_data.jpg)
+
+    - O nome do arquivo gerado é configurado como uma variável no Airflow, portanto não é necessário alterar o script python do pipeline, facilitando a utilização por profissionais com baixo conhecimento técnico e possibilitando a reutilização do código em outros pipelines de dados;
+
+        ![var_write_gold_data](./readme-img/5_3_var_write_gold_data.jpg)
+
+- Ao final desta etapa uma notificação é enviada ao Slack sinalizando êxito (nome do arquivo gerado e quantidade de registros duplicados identificado) ou falha, com os respectivos detalhes.
+    
+    ![slack_write_gold_data](./readme-img/5_2_slack_write_gold_data.jpg)
+
+#### 4. Execução completa do fluxo
+
+![fluxo_executado](./readme-img/6_fluxo_executado.jpg)
+
+### Conexão do Airflow com o Slack 🔌
+
+![DAG](./readme-img/2_1_conn_slack.jpg)
 
 ## Desenvolvido por ✨
 
