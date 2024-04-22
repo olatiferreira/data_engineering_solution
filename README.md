@@ -194,9 +194,82 @@ O componente da solução implementado para demonstrar o funcionamento foi a cri
 
 ![fluxo_executado](./readme-img/6_fluxo_executado.jpg)
 
-### Conexão do Airflow com o Slack 🔌
+### Como Executar
 
-![DAG](./readme-img/2_1_conn_slack.jpg)
+#### 1. Crie um bucket no S3 conforme a estrutura abaixo
+
+```sql
+├── <nome-do-seu-bucket>
+│   ├── airflow
+│   │   ├── dags
+│   │   │   ├── people_pipeline.py
+│   │   ├── scripts
+│   │   │   ├── requirements.txt
+│   ├── data
+│   │   ├── bronze
+│   │   │   ├── people-100000.csv
+│   │   │   ├── people-100000_v2.csv
+│   │   ├── silver
+│   │   ├── gold
+```
+
+> **Nota**
+> Os arquivos "people_pipeline.py" e "requirements.txt" estão disponibilizados neste repositório e o download dos arquivos "people-100000.csv" e "people-100000_v2.csv" pode ser realizado [aqui](https://drive.google.com/uc?id=1VEi-dnEh4RbBKa97fyl_Eenkvu2NC6ki&export=download).
+
+#### 2. Crie um ambiente no Amazon Managed Workflows for Apache Airflow
+
+- Nas configurações do ambiente da seção "Código do DAG no Amazon S3":
+    - Em "Bucket do S3", selecione o bucket criado no passo anterior;
+    - Em "Pasta DAGs", selecione a pasta "dags" que está dentro do bucket criado no passo anterior;
+    - Em "Arquivo de requisitos - opcional", selecione o arquivo "requirements.txt" que está dentro da pasta "scripts" criado dentro do bucket no passo anterior.
+    
+- Nas configurações do ambiente da seção "Rede":
+    - Em "Grupos de segurança", crie um novo grupo de segurança com as permissões necessárias para acessar a interface do usuário do Airflow;
+        - Caso queira acessar a interface do usuário fora da rede corporativa, em "Acesso ao servidor web" selecione "Rede pública (Acesso à Internet). Lembrando que está opção deixará o seu ambiente exposto publicamente.
+
+> **Nota**
+> Após criar o ambiente do Airflow, será necessário acessar o IAM para conceder permissão na função do Amazon Managed Workflows for Apache Airflow de leitura (getObjects) e escrita (putObjects) ao bucket S3 criado no passo 1.
+
+#### 3. Acesse a interface do usuário do Airflow para configurar as variáveis e a conexão com o Slack para o envio das notificações
+
+- Configuração de variáveis    
+
+    - No menu superior da interface do usuário do Airflow, acesse "Admin -> Variables" e crie as variáveis abaixo:
+
+        - `s3_bucket`: Nome do seu bucket S3.Sua chave de API para acessar o serviço.
+        - `filename_silver`: Nome do arquivo que será gerado na camada silver.
+        - `filename_gold`: Nome do arquivo que será gerado na camada gold.
+
+            - Exemplo:
+
+                ![variaveis](./readme-img/7_variaveis.jpg)
+
+- Configuração de conexão com o Slack    
+    - No menu superior da interface do usuário do Airflow, acesse "Admin -> Connections" e crie a conexão abaixo:
+
+        - `slack_webhook_connection`: Webhook URL criada referente ao canal do Slack.
+
+            - Exemplo:
+
+                ![slack](./readme-img/2_1_conn_slack.jpg)
+
+    > **Nota**
+    > Será necessário acessar as configurações do Slack para ativar os webhooks de entrada e adicionar um novo webhook ao espaço de trabalho vinculado ao canal desejado. Você pode conferir o passo a passo na [documentação](https://api.slack.com/messaging/webhooks) do Slack.
+
+#### 4. Execute a tarefa (DAG)
+
+- Acesse a interface do usuário do Airflow;
+- No menu superior da interface do usuário do Airflow, acesse "DAGs";
+- A tarefa "people_pipeline" será importada e aparecerá na interface do usuário do Airflow;
+- Na tarefa, dentro da seção "Actions", clique no botão "Trigger DAG" para executá-la, conforme print abaixo.
+    ![execute_tarefa](./readme-img/8_execute_tarefa.jpg)
+
+#### 5. Valide a execução da tarefa e se os dados foram gerados/atualizados nas respectivas camadas
+
+- Verifique as notificações que chegaram no canal do slack configurado no passo 3;
+- Caso tenha recebido notificações de êxito, verifique se os dados foram gerados/atualizados nas camadas silver e gold dentro da pasta "data" criada no bucket no passo 1:
+    - Verifique a existência do arquivo .parquet na camada silver;
+    - Verifique a existência do arquivo .parquet na camada gold.
 
 ## Desenvolvido por ✨
 
