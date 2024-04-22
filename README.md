@@ -10,65 +10,13 @@ Tornar o processo de atualização dos dados através das camadas (bronze, silve
 - **Processamento:** [Databricks](https://www.databricks.com/br)
 - **Análise:** [ThoughtSpot](https://www.thoughtspot.com/)
 - **Orquestração:** [Airflow](https://airflow.apache.org/)
-- **Controle de versão:** [GitLab](https://about.gitlab.com/)
+- **Versionamento e Pipeline CI/CD:** [GitLab](https://about.gitlab.com/)
 
-## Resumo 🔎
+## [Entregável 1] - Solução detalhada
 
-1. Pipeline de dados automatizado que extrai dados de fontes originais e os armazena no S3;
+### Etapas 📃
 
-2. O Databricks será utilizado para processar e limpar os dados oriundos do S3, aplicando regras de validação, transformações e agregando dados de diferentes fontes;
-
-3. Os dados refinados poderão ser integrados no ThoughtSpot para que os usuários de negócios possam explorá-los e analisá-los;
-
-4. O Airflow irá orquestrar o fluxo de trabalho de todo o pipeline, agendando tarefas de extração, processamento, carregamento e análise, inclusive notificando e orientando o desenvolvedor em caso de falhas;
-
-5. Testes de unidade e integração serão implementados para garantir a qualidade e confiabilidade do pipeline;
-
-6. O pipeline de dados e a arquitetura do produto analítico deverá ser documentado de forma macro para facilitar a compreensão e a manutenção pelo próprio desenvolvedor e/ou de seus pares.
-
-## Arquitetura 🎲
-
-![App Screenshot](https://via.placeholder.com/468x300?text=App+Screenshot+Here)
-
-
-## Etapas 📃
-
-#### 1. Coleta de Dados
-
-- Os dados brutos serão coletados de suas fontes originais e armazenados na camada bronze do S3, em formato parquet;
-
-- Os metadados dos dados (fonte, data, schema, etc.) poderão ser armazenados em um banco de dados NoSQL, como por exemplo o DynamoDB, facilitando a consulta, gerenciamento e governança.
-
-#### 2. Processamento
-
-- O Databricks será utilizado como plataforma de processamento de dados em nuvem, que além de prover recursos de clusterização, também irá oferecer provisionamento automático para lidar com grandes volumes de dados para executar as tarefas de ETL (extração, transformação e carregamento), limpeza e preparação dos dados;
-
-- Cada notebook será executado em um cluster Databricks dedicado, aproveitando a escalabilidade e o poder de processamento da plataforma.
-
-#### 3. Controle de Versão e Colaboração
-
-- O GitLab será utilizado como repositório central para armazenar o código do pipeline de dados, documentação e outros recursos relacionados (notebooks Python/SQL);
-
-    - Ele facilitará a colaboração entre equipes, a revisão de código e o controle de versões.
-
-#### 4. Validação dos Dados
-
-- Antes dos dados serem carregados para as próximas camadas, os dados serão validados para garantir a qualidade, consistência e integridade;
-
-- Regras de validação customizadas poderão ser implementadas para cada tipo de dado e etapa do pipeline;
-
-- Em caso de inconsistências, o desenvolvedor responsável pelo notebook será notificado via e-mail e/ou Slack;
-    - A notificação poderá incluir detalhes do erro, logs e instruções sobre como corrigi-lo.
-
-    #### 4.1. Teste Unitário
-
-    - Testes unitários automatizados serão implementados para garantir o funcionamento correto dos notebooks;
-
-    - Os testes serão executados antes de cada execução do pipeline no Databricks;
-
-    - Falhas nos testes unitários impedirão a execução do pipeline em produção, prevenindo a introdução de erros.
-
-#### 5. Armazenamento dos Dados
+#### 1. Armazenamento
 
 - Para prover escalabilidade e durabilidade dos dados, eles serão armazenados em camadas no AWS S3, conforme abaixo:
 
@@ -76,53 +24,79 @@ Tornar o processo de atualização dos dados através das camadas (bronze, silve
     - **Silver:** Dados transformados.
     - **Gold:** Dados validados e prontos para análise e uso pelas unidades de negócio, utilizando o ThoughtSpot por exemplo.
 
-#### 6. Análise e Visualização
+- Os metadados dos dados (fonte, data, schema, etc.) poderão ser armazenados em um banco de dados NoSQL, como por exemplo o DynamoDB, facilitando a consulta, gerenciamento e governança;
+
+- Para reduzir custos e otimizar o armazenamento, serão implementadas políticas de ciclo de vida dos dados, as quais irão permitir automatizar a transição dos dados entre diferentes classes de armazenamento do S3 com base nos padrões de acesso;
+
+    -  Por exemplo, os dados que não forem acessados após um determinado período de tempo serão  movidos para a classe de armazenamento S3 Infrequent Access (S3 IA) ou até mesmo para a S3 Glacier Flexible Retrieval.
+
+#### 2. Processamento
+
+- O Databricks será utilizado como plataforma de processamento de dados em nuvem, que além de prover recursos de clusterização, também irá oferecer provisionamento automático para lidar com grandes volumes de dados para executar as tarefas de ETL (extração, transformação e carregamento), limpeza e preparação dos dados, o que significa que recursos poderão ser dimensionados de acordo com a demanda, reduzindo significativamente os custos operacionais;
+
+    - Por exemplo, poderá ser provisionado clusters temporários para execução de tarefas apenas quando necessário, evitando gastos excessivos com infraestrutura ociosa;
+
+- Cada notebook será executado em um cluster Databricks dedicado, conforme as boas práticas recomendam, aproveitando a escalabilidade e o poder de processamento da plataforma de forma eficiente, garantindo que apenas os recursos necessários sejam utiliados;
+
+    - Por exemplo, poderá ser configurado políticas de auto-escalonamento para ajustar dinamicamente o tamanho dos clusters com base na carga de trabalho, evitando desperdício de recursos e consequentemente reduzindo os custos.
+
+#### 3. Análise
 
 - O ThoughtSpot será utilizado como plataforma de análise de dados self-service, fornecendo aos usuários de negócio acesso interativo e visual aos dados da camada gold;
 
 - Os usuários poderão explorar os dados, criar dashboards e relatórios personalizados, sem a necessidade de conhecimento técnico aprofundado.
 
-#### 7. Orquestração, Monitoramento e Governança
+#### 4. Orquestração
 
-- O Airflow irá monitorar a execução dos notebooks e pipelines, notificando os desenvolvedores via e-mail e/ou Slack, em caso de falhas ou atrasos;
+- O Airflow será utilizado para agendar, monitorar e gerenciar os pipelines de dados;
 
-- Logs detalhados de cada etapa do processo serão armazenados no AWS S3 para análise e investigação em caso de problemas;
+- Políticas de escalonamento dinâmico de recursos serão configuradas para aumentar ou diminuir o número de workers do Airflow com base na carga de trabalho, otimizando os recursos de computação, reduzindo significamente os custos;
 
-- Políticas de acesso e segurança são implementadas no AWS S3, Databricks e ThoughtSpot para controlar o acesso aos dados e garantir a confidencialidade e integridade dos dados.
+- Será implementado scripts e ferramentas que desligam automaticamente instâncias do Airflow quando não estiverem em uso por um determinado período de tempo;
 
-    #### 7.1 Monitoramento de Desempenho
+- Alertas serão configurados e poderão ser enviados no Slack, notificando o desenvolvedor sobre as métricas de desempenho dos pipelines (tempo de execução, volume de dados processados, taxa de erros, etc) e sobre o status de execução das etapas dos pipelines, incluindo falhas;
 
-    - Métricas de desempenho dos pipelines (tempo de execução, volume de dados processados, taxa de erros, etc) serão coletadas e armazenadas para fins de observabilidade;
+- Todos os logs serão armazenados no S3 para fins análise e investigação, possibilitando a identificação de oportunidades de otimização e ajustes nas configurações para reduzir custos sem comprometer a disponibilidade.
 
-    - Dashboards e alertas serão configurados para monitorar as métricas de desempenho e identificar gargalos ou anomalias;
+#### 5. Versionamento e Pipeline CI/CD
 
-     - Ações automatizadas poderão ser configuradas para escalar recursos ou reexecutar pipelines em caso de problemas de desempenho.
+- O GitLab será utilizado como repositório para gerenciamento, controle de versão e documentação dos scripts, integração contínua, entrega contínua e colaboração entre equipes de desenvolvimento;
 
-    #### 7.2 Governança de Dados
+- Será configurado um pipeline que irá executar testes automatizados, como testes unitários e testes de integração, sempre que houver uma nova alteração no código do repositório;
 
-    - Um catálogo de dados será implementado para documentar as fontes de dados, pipelines, tabelas e outros artefatos relacionados à gestão de dados;
+- Haverá a implementação de um processo de revisão de código, onde os membros da equipe revisam e validam as alterações propostas antes de serem integradas ao pipeline principal;
 
-    - Políticas de qualidade de dados serão definidas e aplicadas para garantir a confiabilidade e a integridade dos dados;
+- Ferramentas de linting e verificadores de estilo de código serão utilizadas para garantir que o código do pipeline siga as melhores práticas e os padrões estabelecidos;
 
-    - Controles de acesso granular serão implementados para restringir o acesso aos dados com base nas funções e responsabilidades dos usuários.
+- Ferramentas de análise estática de código serão configuradas para identificar potenciais problemas de qualidade, como código duplicado, complexidade excessiva e vulnerabilidades de segurança.
 
-## Trade-offs 🔄
+#### 6. Governança de Dados
+
+- Um catálogo de dados será implementado para documentar as fontes de dados, pipelines, tabelas e outros artefatos relacionados à gestão de dados;
+
+- Políticas de acesso, qualidade e segurança serão definidas e aplicadas para restringir e controlar o acesso aos dados, garantindo a confiabilidade, confidencialidade e integridade dos dados.
+
+### Trade-offs 🔄
 
 - **Custo:** A utilização de ferramentas como Databricks e ThoughtSpot poderão gerar custos adicionais. No entanto, o retorno do investimento (ROI) da solução poderá ser significativo em termos de maior eficiência, produtividade e redução de riscos.
 
+- **Escalabilidade e Elasticidade:** A configuração correta dos recursos de escalabilidade e elasticidade pode ser complexa. No entanto, uma vez configurados adequadamente, esses recursos permitem que os pipelines de dados se adaptem dinamicamente à demanda, garantindo um desempenho consistente mesmo diante de variações na carga de trabalho.
+
+- **Serviços Gerenciados:** A solução depende da disponibilidade e desempenho de serviços gerenciados como AWS S3, Databricks e ThoughtSpot. No entanto, permitirá que a equipe se concentre nas tarefas de valor agregado, aproveitando a expertise e a infraestrutura desses provedores, o que pode resultar em uma implementação mais rápida e eficiente dos pipelines de dados.
+
 - **Complexidade:** A implementação da solução completa poderá exigir um investimento inicial em treinamento e familiarização das equipes com as novas ferramentas. No entanto, a longo prazo, a solução irá contribuir para a padronização dos processos, reduzindo o tempo de desenvolvimento e a necessidade de manutenção dos pipelines.
 
-## Benefícios 🎁
+### Benefícios 🎁
 
 - **Armazenamento centralizado e seguro de dados:** O S3 garante que seus dados estejam sempre disponíveis e protegidos.
 
-- **Processamento de dados escalável e eficiente:** O Databricks permite lidar com grandes volumes de dados de forma eficiente e escalável.
+- **Eficiência operacional:** O Databricks permite lidar com grandes volumes de dados de forma eficiente e escalável, otimizando recursos e reduzindo custos operacionais.
 
 - **Análise de dados self-service:** O ThoughtSpot capacita os usuários de negócios a explorar e analisar dados sem a necessidade de conhecimento técnico aprofundado.
 
-- **Orquestração automatizada de tarefas:** O Airflow garante que o pipeline de dados seja executado de forma confiável e consistente.
+- **Automação e orquestração:** O Airflow garante que o pipeline de dados seja executado de forma confiável e consistente, garantindo os SLAs necessários para o negócio.
 
-- **Controle de versão e colaboração:** O GitLab facilita a colaboração entre equipes e o controle de versões do código do pipeline.
+- **Controle de versão e qualidade do código:** Além do GitLab realizar o  controle de versão e documentação dos scripts, garantindo a colaboração entre equipes de desenvolvimento, também implementa pipelines CI/CD automatizados, que juntamente com testes automatizados e de revisão de código, assegura a qualidade do código e a integridade dos pipelines.
 
 ## Desenvolvido por ✨
 
